@@ -2,7 +2,7 @@ import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 import { http } from 'viem';
 import { sepolia } from 'wagmi/chains';
 
-const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? '';
+const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? 'projectId';
 const infuraKey = import.meta.env.VITE_INFURA_API_KEY ?? '';
 
 export const config = getDefaultConfig({

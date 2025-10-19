@@ -1,4 +1,4 @@
-export const CONTRACT_ADDRESS = (import.meta.env.VITE_ENCRYPTED_GALLERY_ADDRESS ?? '') as `0x${string}`;
+export const CONTRACT_ADDRESS = "0xFb0b8DCA49d84044eed34DF1326eF83826af6b57"
 
 export const CONTRACT_ABI = [
   {
