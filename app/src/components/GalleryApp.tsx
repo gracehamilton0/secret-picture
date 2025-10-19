@@ -7,7 +7,7 @@ import { useZamaInstance } from '../hooks/useZamaInstance';
 import { useEthersSigner } from '../hooks/useEthersSigner';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '../config/contracts';
 import { decryptContent, detectMimeType, encryptContent } from '../utils/crypto';
-import { buildIpfsGatewayUrl, fetchFromIpfs, uploadToWeb3Storage } from '../utils/ipfs';
+import { fetchFromIpfs, uploadToPseudoIpfs } from '../utils/ipfs';
 import '../styles/GalleryApp.css';
 
 type PreparedEncryption = {
@@ -45,7 +45,6 @@ export function GalleryApp() {
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const [prepared, setPrepared] = useState<PreparedEncryption | null>(null);
   const [encrypting, setEncrypting] = useState(false);
-  const [web3Token, setWeb3Token] = useState('');
   const [uploading, setUploading] = useState(false);
   const [ipfsHash, setIpfsHash] = useState('');
   const [publishing, setPublishing] = useState(false);
@@ -126,22 +125,17 @@ export function GalleryApp() {
       alert('Encrypt the image before uploading');
       return;
     }
-    if (!web3Token) {
-      alert('Enter a Web3.Storage token to upload');
-      return;
-    }
     setUploading(true);
     try {
-      const blob = new Blob([prepared.payload], { type: 'application/octet-stream' });
-      const cid = await uploadToWeb3Storage(web3Token, blob);
+      const cid = await uploadToPseudoIpfs(prepared.payload);
       setIpfsHash(cid);
     } catch (error) {
-      console.error('IPFS upload failed', error);
-      alert(`IPFS upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Pseudo upload failed', error);
+      alert(`Pseudo upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setUploading(false);
     }
-  }, [prepared, web3Token]);
+  }, [prepared]);
 
   const handlePublish = useCallback(async () => {
     if (!prepared || !ipfsHash) {
@@ -414,8 +408,8 @@ export function GalleryApp() {
         <section className="card">
           <h2 className="card-title">Create Encrypted Listing</h2>
           <p className="card-subtitle">
-            Select an image, encrypt it locally with a freshly generated wallet key, upload the ciphertext to IPFS, and
-            store the fully homomorphic encrypted key on-chain.
+            Select an image, encrypt it locally with a freshly generated wallet key, simulate uploading the ciphertext,
+            and store the fully homomorphic encrypted key on-chain.
           </p>
 
           <div className="form-grid">
@@ -452,30 +446,18 @@ export function GalleryApp() {
               </div>
             ) : null}
 
-            <label className="field">
-              <span className="field-label">Web3.Storage token</span>
-              <input
-                type="password"
-                value={web3Token}
-                onChange={(event) => setWeb3Token(event.target.value)}
-                placeholder="Paste token (kept only in memory)"
-              />
-            </label>
-
             <button
               className="secondary-button"
               onClick={handleUpload}
-              disabled={!prepared || uploading || !web3Token}
+              disabled={!prepared || uploading}
             >
               {uploading ? 'Uploading...' : 'Upload Encrypted Image'}
             </button>
 
             {ipfsHash ? (
               <div className="ipfs-badge">
-                <span>IPFS CID:</span>
-                <a href={buildIpfsGatewayUrl(ipfsHash)} target="_blank" rel="noreferrer">
-                  {ipfsHash}
-                </a>
+                <span>Pseudo CID:</span>
+                <span>{ipfsHash}</span>
               </div>
             ) : null}
 
@@ -494,8 +476,8 @@ export function GalleryApp() {
         <section className="card">
           <h2 className="card-title">Encrypted Gallery</h2>
           <p className="card-subtitle">
-            Each listing stores an encrypted IPFS hash of the ciphertext. Purchase access for {priceLabel} to unlock the
-            FHE-encrypted decryption key.
+            Each listing stores an encrypted pseudo CID for the ciphertext. Purchase access for {priceLabel} to unlock
+            the FHE-encrypted decryption key.
           </p>
 
           <div className="gallery-grid">
@@ -512,10 +494,8 @@ export function GalleryApp() {
                   </header>
                   <div className="gallery-body">
                     <p className="gallery-hash">
-                      <span>IPFS:</span>
-                      <a href={buildIpfsGatewayUrl(item.ipfsHash)} target="_blank" rel="noreferrer">
-                        {item.ipfsHash}
-                      </a>
+                      <span>Pseudo CID:</span>
+                      <span>{item.ipfsHash}</span>
                     </p>
                     <p className="gallery-price">Price: {ethers.formatEther(item.price)} ETH</p>
                     <p className="gallery-created">
